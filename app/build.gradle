@@ -3,16 +3,16 @@ plugins {
     id 'kotlin-android'
     id 'kotlin-android-extensions'
 }
+apply plugin: 'com.android.application'
 apply plugin: 'com.google.gms.google-services'
-
 android {
-    compileSdkVersion 30
+    compileSdkVersion 31
     buildToolsVersion "30.0.3"
 
     defaultConfig {
         applicationId "com.dwarsh.webrtcsample"
-        minSdkVersion 21
-        targetSdkVersion 30
+        minSdkVersion 24
+        targetSdkVersion 31
         versionCode 1
         versionName "1.0"
 
@@ -45,6 +45,10 @@ android {
     }
 }
 
+ext {
+    parseVersion = "1.26.0"
+}
+
 dependencies {
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
@@ -57,7 +61,7 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.2.1")
     implementation 'org.webrtc:google-webrtc:1.0.32006'
-    implementation platform('com.google.firebase:firebase-bom:27.0.0')
+    implementation platform('com.google.firebase:firebase-bom:28.2.1')
     implementation 'com.google.firebase:firebase-analytics-ktx'
     // Declare the dependency for the Cloud Firestore library
     // When using the BoM, you don't specify versions in Firebase library dependencies
@@ -68,4 +72,9 @@ dependencies {
     implementation("io.ktor:ktor-client-websocket:$ktor_version")
     implementation("io.ktor:ktor-client-cio:$ktor_version")
     implementation("io.ktor:ktor-client-gson:$ktor_version")
+    implementation "com.github.parse-community.Parse-SDK-Android:parse:$parseVersion"
+    // for Kotlin extensions support (optional)
+    implementation "com.github.parse-community.Parse-SDK-Android:ktx:$parseVersion"
+    // for Kotlin coroutines support (optional)
+    implementation "com.github.parse-community.Parse-SDK-Android:coroutines:$parseVersion"
 }
