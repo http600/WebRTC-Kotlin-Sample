@@ -178,8 +178,10 @@ class RTCClient(
                     "sdp" to desc?.description,
                     "type" to desc?.type
                 )
-                val query = ParseQuery.getQuery<ParseObject>("calls2021")
-                query.whereEqualTo("key", meetingID)
+                val parseObject = ParseObject("calls2021")
+                parseObject.put("key", meetingID)
+                answer.forEach { (s, p) -> parseObject.put(s, p.toString()) }
+                parseObject.saveInBackground()
                 db.collection("calls").document(meetingID)
                     .set(answer)
                     .addOnSuccessListener {
