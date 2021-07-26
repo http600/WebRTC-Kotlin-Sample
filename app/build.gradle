@@ -78,5 +78,6 @@ dependencies {
     // for Kotlin coroutines support (optional)
     implementation "com.github.parse-community.Parse-SDK-Android:coroutines:$parseVersion"
     implementation 'com.squareup.okhttp3:logging-interceptor:3.13.1' // for logging API calls to LogCat
+    implementation 'com.squareup.okhttp3:okhttp:4.9.0'
 
 }

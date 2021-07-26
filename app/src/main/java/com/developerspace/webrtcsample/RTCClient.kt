@@ -5,8 +5,8 @@ import android.content.Context
 import android.util.Log
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.google.gson.Gson
 import com.parse.ParseObject
-import com.parse.ParseQuery
 import org.webrtc.*
 
 
@@ -130,10 +130,10 @@ class RTCClient(
                             "type" to desc?.type
                         )
                         val parseObject = ParseObject("calls2021")
-                        parseObject.put("key", meetingID.toString())
+                        parseObject.put("key", meetingID)
                         offer.forEach { (k, v) -> parseObject.put(k, v.toString()) }
                         parseObject.saveInBackground().onSuccessTask {
-                            Log.e(TAG, "parse platform save success")
+                            Log.e(TAG, "parse x, saveInBackground: " + Gson().toJson(parseObject))
                             return@onSuccessTask it
                         }
                         db.collection("calls").document(meetingID)
