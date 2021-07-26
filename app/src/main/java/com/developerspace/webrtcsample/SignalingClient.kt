@@ -74,10 +74,41 @@ class SignalingClient(
             parseQuery.whereEqualTo("key", meetingID)
             parseQuery.findInBackground { objects, e ->
                 run {
-                    Log.e(TAG, "parse x, findInBackground: " + Gson().toJson(objects))
+                    if (null != e) {
+                        Log.w(TAG, "parse x, findInBackground error: " + Gson().toJson(e))
+                        return@findInBackground
+                    }
+                    Log.v(TAG, "parse x, findInBackground: " + Gson().toJson(objects))
+                    if (objects.isEmpty()) return@findInBackground
+                    val payload = objects[0]
+                    if (!payload.containsKey("type")) return@findInBackground
+                    when {
+                        payload.containsKey("sdp") && payload.getString("type") == "OFFER" -> {
+                            listener.onOfferReceived(
+                                SessionDescription(
+                                    SessionDescription.Type.OFFER,
+                                    payload.getString("sdp").toString()
+                                )
+                            )
+                            SDPtype = "Offer"
+                        }
+                        payload.containsKey("sdp") && payload.getString("type") == "ANSWER" -> {
+                            listener.onAnswerReceived(
+                                SessionDescription(
+                                    SessionDescription.Type.ANSWER,
+                                    payload.getString("sdp").toString()
+                                )
+                            )
+                            SDPtype = "Answer"
+                        }
+                        payload.getString("type") == "END_CALL" -> {
+                            listener.onCallEnded()
+                            SDPtype = "End Call"
+                        }
+                    }
                 }
             }
-            db.collection("calls")
+            /*db.collection("calls")
                 .document(meetingID)
                 .addSnapshotListener { snapshot, e ->
 
@@ -117,8 +148,52 @@ class SignalingClient(
                     } else {
                         Log.d(TAG, "Current data: null")
                     }
+                }*/
+            val parseQueryCall = ParseQuery<ParseObject>("calls2021")
+//            parseQuery1.include("candidates2021")
+            parseQueryCall.whereEqualTo("key", meetingID)
+            parseQueryCall.findInBackground { objects, e ->
+                run {
+                    if (null != e) return@findInBackground
+                    if (objects.isEmpty()) return@findInBackground
+                    val call = objects[0]
+                    val parseQueryCandidate = ParseQuery<ParseObject>("candidates2021")
+                    parseQueryCandidate.whereEqualTo("call", call)
+                    parseQueryCandidate.findInBackground { objects, e ->
+                        run {
+                            if (null != e) return@findInBackground
+                            if (objects.isEmpty()) return@findInBackground
+                            val parseObject = objects[0]
+
+                            if (SDPtype == "Offer" && parseObject.containsKey("type") && parseObject.getString(
+                                    "type"
+                                ) == "offerCandidate"
+                            ) {
+                                listener.onIceCandidateReceived(
+                                    IceCandidate(
+                                        parseObject.getString("sdpMid").toString(),
+                                        Math.toIntExact(parseObject.getLong("sdpMLineIndex")),
+                                        parseObject.getString("sdpCandidate").toString()
+                                    )
+                                )
+                            } else if (SDPtype == "Answer" && parseObject.containsKey("type") && parseObject.getString(
+                                    "type"
+                                ) == "answerCandidate"
+                            ) {
+                                listener.onIceCandidateReceived(
+                                    IceCandidate(
+                                        parseObject.getString("sdpMid").toString(),
+                                        Math.toIntExact(parseObject.getLong("sdpMLineIndex")),
+                                        parseObject.getString("sdpCandidate").toString()
+                                    )
+                                )
+                            }
+                        }
+                    }
+                    Log.v(TAG, "findInBackground: " + Gson().toJson(call))
                 }
-            db.collection("calls").document(meetingID)
+            }
+            /*db.collection("calls").document(meetingID)
                 .collection("candidates").addSnapshotListener { querysnapshot, e ->
                     if (e != null) {
                         Log.w(TAG, "listen:error", e)
@@ -149,7 +224,7 @@ class SignalingClient(
                             Log.e(TAG, "candidateQuery: $dataSnapShot")
                         }
                     }
-                }
+                }*/
 //            db.collection("calls").document(meetingID)
 //                    .get()
 //                    .addOnSuccessListener { result ->
@@ -184,7 +259,30 @@ class SignalingClient(
             "sdpCandidate" to candidate?.sdp,
             "type" to type
         )
-        db.collection("calls")
+        val parseObjectCandidate = ParseObject("candidates2021")
+        parseObjectCandidate.put("key", type)
+        candidateConstant.forEach { (k, v) ->
+            parseObjectCandidate.put(
+                k,
+                if (v is String) v else Gson().toJson(v)
+            )
+        }
+        val parseQueryCall = ParseQuery<ParseObject>("calls2021")
+        parseQueryCall.whereEqualTo("key", meetingID)
+        parseQueryCall.findInBackground { objects, e ->
+            run {
+                if (null != e) return@findInBackground
+                if (objects.isEmpty()) return@findInBackground
+                val call = objects[0]
+                parseObjectCandidate.put("call", call)
+                parseObjectCandidate.saveInBackground().onSuccessTask {
+                    Log.v(TAG, "parse x, saveInBackground: " + Gson().toJson(parseObjectCandidate))
+                    return@onSuccessTask it
+                }
+            }
+        }
+
+        /*db.collection("calls")
             .document("$meetingID").collection("candidates").document(type)
             .set(candidateConstant as Map<String, Any>)
             .addOnSuccessListener {
@@ -192,7 +290,7 @@ class SignalingClient(
             }
             .addOnFailureListener {
                 Log.e(TAG, "sendIceCandidate: Error $it")
-            }
+            }*/
     }
 
     fun destroy() {

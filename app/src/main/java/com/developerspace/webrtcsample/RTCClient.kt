@@ -7,6 +7,7 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
 import com.parse.ParseObject
+import com.parse.ParseQuery
 import org.webrtc.*
 
 
@@ -133,17 +134,17 @@ class RTCClient(
                         parseObject.put("key", meetingID)
                         offer.forEach { (k, v) -> parseObject.put(k, v.toString()) }
                         parseObject.saveInBackground().onSuccessTask {
-                            Log.e(TAG, "parse x, saveInBackground: " + Gson().toJson(parseObject))
+                            Log.v(TAG, "parse x, saveInBackground: " + Gson().toJson(parseObject))
                             return@onSuccessTask it
                         }
-                        db.collection("calls").document(meetingID)
+                        /*db.collection("calls").document(meetingID)
                             .set(offer)
                             .addOnSuccessListener {
                                 Log.e(TAG, "DocumentSnapshot added")
                             }
                             .addOnFailureListener { e ->
                                 Log.e(TAG, "Error adding document", e)
-                            }
+                            }*/
                         Log.e(TAG, "onSetSuccess")
                     }
 
@@ -178,18 +179,41 @@ class RTCClient(
                     "sdp" to desc?.description,
                     "type" to desc?.type
                 )
-                val parseObject = ParseObject("calls2021")
+                val parseQuery = ParseQuery<ParseObject>("calls2021")
+                parseQuery.whereEqualTo("key", meetingID)
+                parseQuery.findInBackground { objects, e ->
+                    run {
+                        if (null != e) return@findInBackground
+                        if (objects.isEmpty()) return@findInBackground
+                        val parseObject = objects[0]
+                        answer.forEach { (k, v) ->
+                            parseObject.put(
+                                k,
+                                if (v is String) v else Gson().toJson(v)
+                            )
+                        }
+                        parseObject.saveInBackground().onSuccessTask {
+                            Log.v(TAG, "saveInBackground: " + Gson().toJson(it))
+                            return@onSuccessTask it
+                        }
+                        return@findInBackground
+                    }
+                }
+                /*val parseObject = ParseObject("calls2021")
                 parseObject.put("key", meetingID)
                 answer.forEach { (s, p) -> parseObject.put(s, p.toString()) }
-                parseObject.saveInBackground()
-                db.collection("calls").document(meetingID)
+                parseObject.saveInBackground().onSuccessTask {
+                    Log.v(TAG, "parse x, saveInBackground: " + Gson().toJson(parseObject))
+                    return@onSuccessTask it
+                }*/
+                /*db.collection("calls").document(meetingID)
                     .set(answer)
                     .addOnSuccessListener {
                         Log.e(TAG, "DocumentSnapshot added")
                     }
                     .addOnFailureListener { e ->
                         Log.e(TAG, "Error adding document", e)
-                    }
+                    }*/
                 setLocalDescription(object : SdpObserver {
                     override fun onSetFailure(p0: String?) {
                         Log.e(TAG, "onSetFailure: $p0")
@@ -249,7 +273,45 @@ class RTCClient(
     }
 
     fun endCall(meetingID: String) {
-        db.collection("calls").document(meetingID).collection("candidates")
+        val parseQuery = ParseQuery<ParseObject>("calls2021")
+        parseQuery.whereEqualTo("key", meetingID)
+        parseQuery.findInBackground { objects, e ->
+            run {
+                if (null != e) return@findInBackground
+                if (objects.isEmpty()) return@findInBackground
+                val parseObject = objects[0]
+                val parseQuery1 = ParseQuery<ParseObject>("candidates2021")
+                parseQuery1.whereEqualTo("call", parseObject)
+                parseQuery1.findInBackground { objects, e ->
+                    run {
+                        if (null != e) return@findInBackground
+                        if (objects.isEmpty()) return@findInBackground
+                        val iceCandidateArray: MutableList<IceCandidate> = mutableListOf()
+                        for (x in objects) {
+                            if (x.containsKey("type") && x.getString("type") == "offerCandidate") {
+                                iceCandidateArray.add(
+                                    IceCandidate(
+                                        x.getString("sdpMid").toString(),
+                                        Math.toIntExact(x.getLong("sdpMLineIndex")),
+                                        x.getString("sdp").toString()
+                                    )
+                                )
+                            } else if (x.containsKey("type") && x.getString("type") == "answerCandidate") {
+                                iceCandidateArray.add(
+                                    IceCandidate(
+                                        x.getString("sdpMid").toString(),
+                                        Math.toIntExact(x.getLong("sdpMLineIndex")),
+                                        x.getString("sdp").toString()
+                                    )
+                                )
+                            }
+
+                        }
+                    }
+                }
+            }
+        }
+        /*db.collection("calls").document(meetingID).collection("candidates")
             .get().addOnSuccessListener {
                 val iceCandidateArray: MutableList<IceCandidate> = mutableListOf()
                 for (dataSnapshot in it) {
@@ -274,18 +336,25 @@ class RTCClient(
                     }
                 }
                 peerConnection?.removeIceCandidates(iceCandidateArray.toTypedArray())
-            }
+            }*/
         val endCall = hashMapOf(
             "type" to "END_CALL"
         )
-        db.collection("calls").document(meetingID)
+        val parseObject = ParseObject("calls2021")
+        parseObject.put("key", meetingID)
+        endCall.forEach { (k, v) -> parseObject.put(k, v) }
+        parseObject.saveInBackground().onSuccessTask {
+            Log.v(TAG, "parse x, saveInBackground: " + Gson().toJson(parseObject))
+            return@onSuccessTask it
+        }
+        /*db.collection("calls").document(meetingID)
             .set(endCall)
             .addOnSuccessListener {
                 Log.e(TAG, "DocumentSnapshot added")
             }
             .addOnFailureListener { e ->
                 Log.e(TAG, "Error adding document", e)
-            }
+            }*/
 
         peerConnection?.close()
     }
