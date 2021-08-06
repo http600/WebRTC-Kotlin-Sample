@@ -14,16 +14,22 @@ import androidx.core.view.isGone
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.activity_start.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import org.java_websocket.client.WebSocketClient
+import org.java_websocket.handshake.ServerHandshake
 import org.webrtc.*
+import java.net.URI
 import java.util.*
 
 @ExperimentalCoroutinesApi
 class RTCActivity : AppCompatActivity() {
+    private lateinit var webSocketClient: WebSocketClient
 
     companion object {
         private const val CAMERA_AUDIO_PERMISSION_REQUEST_CODE = 1
         private const val CAMERA_PERMISSION = Manifest.permission.CAMERA
         private const val AUDIO_PERMISSION = Manifest.permission.RECORD_AUDIO
+        const val WEB_SOCKET_URL = "ws://101.34.243.201:7000/ws"
+        const val TAG = "web-socket"
     }
 
     private lateinit var rtcClient: RTCClient
@@ -103,6 +109,46 @@ class RTCActivity : AppCompatActivity() {
             finish()
             startActivity(Intent(this@RTCActivity, MainActivity::class.java))
         }
+    }
+    override fun onResume() {
+        super.onResume()
+        initWebSocket()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        webSocketClient.close()
+    }
+
+    private fun initWebSocket() {
+        val signallingServer: URI? = URI(WEB_SOCKET_URL)
+        createWebSocketClient(signallingServer)
+    }
+
+    private fun createWebSocketClient(signallingServer: URI?) {
+        webSocketClient = object : WebSocketClient(signallingServer) {
+            override fun onOpen(handshakedata: ServerHandshake?) {
+                Log.d(TAG, "onOpen")
+                subscribe(handshakedata)
+            }
+
+            override fun onMessage(message: String?) {
+                Log.d(TAG, "onMessage: $message")
+            }
+
+            override fun onClose(code: Int, reason: String?, remote: Boolean) {
+                Log.d(TAG, "onClose")
+            }
+
+            override fun onError(ex: Exception?) {
+                Log.d(TAG, "onError")
+            }
+        }
+        webSocketClient.connect()
+    }
+
+    private fun subscribe(handshakedata: ServerHandshake?) {
+        webSocketClient.send("{\"a\": \"b\"}")
     }
 
     private fun checkCameraAndAudioPermission() {
