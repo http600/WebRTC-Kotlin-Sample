@@ -24,7 +24,8 @@ class MainActivity : AppCompatActivity() {
         start_meeting.setOnClickListener {
             if (meeting_id.text.toString().trim().isEmpty())
                 meeting_id.error = "Please enter meeting id"
-            else {val parseQuery = ParseQuery<ParseObject>("calls2021")
+            else {
+                val parseQuery = ParseQuery<ParseObject>("calls2021")
                 parseQuery.whereEqualTo("key", meeting_id.text.toString())
                 parseQuery.findInBackground { objects, e ->
                     run {
