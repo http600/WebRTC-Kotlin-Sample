@@ -128,8 +128,9 @@ class RTCClient(
                         val parseObject = ParseObject("calls2021")
                         parseObject.put("key", meetingID)
                         offer.forEach { (k, v) -> parseObject.put(k, v.toString()) }
-                        parseObject.saveInBackground().onSuccess {
-                            Log.e(TAG, "parse x save succeed")
+                        parseObject.saveInBackground().onSuccessTask {
+                            Log.v(TAG, "parse x, saveInBackground: " + Gson().toJson(parseObject))
+                            return@onSuccessTask it
                         }
                         Log.e(TAG, "onSetSuccess")
                     }
