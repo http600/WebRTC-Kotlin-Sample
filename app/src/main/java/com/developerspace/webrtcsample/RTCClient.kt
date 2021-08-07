@@ -3,8 +3,6 @@ package com.developerspace.webrtcsample
 import android.app.Application
 import android.content.Context
 import android.util.Log
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
 import com.parse.ParseObject
 import com.parse.ParseQuery
@@ -28,8 +26,6 @@ class RTCClient(
     val TAG = "RTCClient"
 
     var remoteSessionDescription: SessionDescription? = null
-
-    val db = Firebase.firestore
 
     init {
         initPeerConnectionFactory(context)
@@ -137,14 +133,6 @@ class RTCClient(
                             Log.v(TAG, "parse x, saveInBackground: " + Gson().toJson(parseObject))
                             return@onSuccessTask it
                         }
-                        /*db.collection("calls").document(meetingID)
-                            .set(offer)
-                            .addOnSuccessListener {
-                                Log.e(TAG, "DocumentSnapshot added")
-                            }
-                            .addOnFailureListener { e ->
-                                Log.e(TAG, "Error adding document", e)
-                            }*/
                         Log.e(TAG, "onSetSuccess")
                     }
 
@@ -199,21 +187,6 @@ class RTCClient(
                         return@findInBackground
                     }
                 }
-                /*val parseObject = ParseObject("calls2021")
-                parseObject.put("key", meetingID)
-                answer.forEach { (s, p) -> parseObject.put(s, p.toString()) }
-                parseObject.saveInBackground().onSuccessTask {
-                    Log.v(TAG, "parse x, saveInBackground: " + Gson().toJson(parseObject))
-                    return@onSuccessTask it
-                }*/
-                /*db.collection("calls").document(meetingID)
-                    .set(answer)
-                    .addOnSuccessListener {
-                        Log.e(TAG, "DocumentSnapshot added")
-                    }
-                    .addOnFailureListener { e ->
-                        Log.e(TAG, "Error adding document", e)
-                    }*/
                 setLocalDescription(object : SdpObserver {
                     override fun onSetFailure(p0: String?) {
                         Log.e(TAG, "onSetFailure: $p0")
@@ -311,32 +284,6 @@ class RTCClient(
                 }
             }
         }
-        /*db.collection("calls").document(meetingID).collection("candidates")
-            .get().addOnSuccessListener {
-                val iceCandidateArray: MutableList<IceCandidate> = mutableListOf()
-                for (dataSnapshot in it) {
-                    if (dataSnapshot.contains("type") && dataSnapshot["type"] == "offerCandidate") {
-                        val offerCandidate = dataSnapshot
-                        iceCandidateArray.add(
-                            IceCandidate(
-                                offerCandidate["sdpMid"].toString(),
-                                Math.toIntExact(offerCandidate["sdpMLineIndex"] as Long),
-                                offerCandidate["sdp"].toString()
-                            )
-                        )
-                    } else if (dataSnapshot.contains("type") && dataSnapshot["type"] == "answerCandidate") {
-                        val answerCandidate = dataSnapshot
-                        iceCandidateArray.add(
-                            IceCandidate(
-                                answerCandidate["sdpMid"].toString(),
-                                Math.toIntExact(answerCandidate["sdpMLineIndex"] as Long),
-                                answerCandidate["sdp"].toString()
-                            )
-                        )
-                    }
-                }
-                peerConnection?.removeIceCandidates(iceCandidateArray.toTypedArray())
-            }*/
         val endCall = hashMapOf(
             "type" to "END_CALL"
         )
@@ -347,15 +294,6 @@ class RTCClient(
             Log.v(TAG, "parse x, saveInBackground: " + Gson().toJson(parseObject))
             return@onSuccessTask it
         }
-        /*db.collection("calls").document(meetingID)
-            .set(endCall)
-            .addOnSuccessListener {
-                Log.e(TAG, "DocumentSnapshot added")
-            }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Error adding document", e)
-            }*/
-
         peerConnection?.close()
     }
 
