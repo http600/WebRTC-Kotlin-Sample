@@ -7,7 +7,6 @@ import com.google.gson.Gson
 import io.ktor.util.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
-import org.json.JSONObject
 import org.webrtc.IceCandidate
 import org.webrtc.SessionDescription
 
@@ -17,13 +16,6 @@ class SignalingClient(
     private val meetingID : String,
     private val listener: SignalingClientListener
 ) : CoroutineScope {
-
-    companion object {
-        private const val HOST_ADDRESS = "192.168.0.12"
-    }
-
-    var jsonObject : JSONObject?= null
-
     private val job = Job()
 
     val TAG = "SignallingClient"
@@ -34,13 +26,6 @@ class SignalingClient(
 
     var SDPtype : String? = null
     override val coroutineContext = Dispatchers.IO + job
-
-//    private val client = HttpClient(CIO) {
-//        install(WebSockets)
-//        install(JsonFeature) {
-//            serializer = GsonSerializer()
-//        }
-//    }
 
     private val sendChannel = ConflatedBroadcastChannel<String>()
 
@@ -55,17 +40,6 @@ class SignalingClient(
         val sendData = sendChannel.offer("")
         sendData.let {
             Log.v(this@SignalingClient.javaClass.simpleName, "Sending: $it")
-//            val data = hashMapOf(
-//                    "data" to it
-//            )
-//            db.collection("calls")
-//                    .add(data)
-//                    .addOnSuccessListener { documentReference ->
-//                        Log.e(TAG, "DocumentSnapshot added with ID: ${documentReference.id}")
-//                    }
-//                    .addOnFailureListener { e ->
-//                        Log.e(TAG, "Error adding document", e)
-//                    }
         }
         try {
             db.collection("calls")
