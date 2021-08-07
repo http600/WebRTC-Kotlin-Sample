@@ -7,7 +7,9 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.google.gson.Gson
 import com.parse.ParseObject
+import com.parse.ParseQuery
 import org.webrtc.*
 
 
@@ -15,20 +17,16 @@ class RTCClient(
     context: Application,
     observer: PeerConnection.Observer
 ) {
-
     companion object {
         private const val LOCAL_TRACK_ID = "local_track"
         private const val LOCAL_STREAM_ID = "local_track"
     }
 
     private val rootEglBase: EglBase = EglBase.create()
-
     private var localAudioTrack: AudioTrack? = null
     private var localVideoTrack: VideoTrack? = null
     val TAG = "RTCClient"
-
     var remoteSessionDescription: SessionDescription? = null
-
     val db = Firebase.firestore
 
     init {
@@ -39,14 +37,11 @@ class RTCClient(
         PeerConnection.IceServer.builder("stun:stun.l.google.com:19302")
             .createIceServer()
     )
-
     private val peerConnectionFactory by lazy { buildPeerConnectionFactory() }
     private val videoCapturer by lazy { getVideoCapturer(context) }
-
     private val audioSource by lazy { peerConnectionFactory.createAudioSource(MediaConstraints()) }
     private val localVideoSource by lazy { peerConnectionFactory.createVideoSource(false) }
     private val peerConnection by lazy { buildPeerConnection(observer) }
-
     private fun initPeerConnectionFactory(context: Application) {
         val options = PeerConnectionFactory.InitializationOptions.builder(context)
             .setEnableInternalTracer(true)
@@ -136,14 +131,6 @@ class RTCClient(
                         parseObject.saveInBackground().onSuccess {
                             Log.e(TAG, "parse x save succeed")
                         }
-                        db.collection("calls").document(meetingID)
-                            .set(offer)
-                            .addOnSuccessListener {
-                                Log.e(TAG, "DocumentSnapshot added")
-                            }
-                            .addOnFailureListener { e ->
-                                Log.e(TAG, "Error adding document", e)
-                            }
                         Log.e(TAG, "onSetSuccess")
                     }
 
@@ -178,14 +165,26 @@ class RTCClient(
                     "sdp" to desc?.description,
                     "type" to desc?.type
                 )
-                db.collection("calls").document(meetingID)
-                    .set(answer)
-                    .addOnSuccessListener {
-                        Log.e(TAG, "DocumentSnapshot added")
+                val parseQuery = ParseQuery<ParseObject>("calls2021")
+                parseQuery.whereEqualTo("key", meetingID)
+                parseQuery.findInBackground { objects, e ->
+                    run {
+                        if (null != e) return@findInBackground
+                        if (objects.isEmpty()) return@findInBackground
+                        val parseObject = objects[0]
+                        answer.forEach { (k, v) ->
+                            parseObject.put(
+                                k,
+                                if (v is String) v else Gson().toJson(v)
+                            )
+                        }
+                        parseObject.saveInBackground().onSuccessTask {
+                            Log.v(TAG, "saveInBackground: " + Gson().toJson(it))
+                            return@onSuccessTask it
+                        }
+                        return@findInBackground
                     }
-                    .addOnFailureListener { e ->
-                        Log.e(TAG, "Error adding document", e)
-                    }
+                }
                 setLocalDescription(object : SdpObserver {
                     override fun onSetFailure(p0: String?) {
                         Log.e(TAG, "onSetFailure: $p0")
@@ -246,44 +245,54 @@ class RTCClient(
 
     @RequiresApi(Build.VERSION_CODES.N)
     fun endCall(meetingID: String) {
-        db.collection("calls").document(meetingID).collection("candidates")
-            .get().addOnSuccessListener {
-                val iceCandidateArray: MutableList<IceCandidate> = mutableListOf()
-                for (dataSnapshot in it) {
-                    if (dataSnapshot.contains("type") && dataSnapshot["type"] == "offerCandidate") {
-                        val offerCandidate = dataSnapshot
-                        iceCandidateArray.add(
-                            IceCandidate(
-                                offerCandidate["sdpMid"].toString(),
-                                Math.toIntExact(offerCandidate["sdpMLineIndex"] as Long),
-                                offerCandidate["sdp"].toString()
-                            )
-                        )
-                    } else if (dataSnapshot.contains("type") && dataSnapshot["type"] == "answerCandidate") {
-                        val answerCandidate = dataSnapshot
-                        iceCandidateArray.add(
-                            IceCandidate(
-                                answerCandidate["sdpMid"].toString(),
-                                Math.toIntExact(answerCandidate["sdpMLineIndex"] as Long),
-                                answerCandidate["sdp"].toString()
-                            )
-                        )
+        val parseQuery = ParseQuery<ParseObject>("calls2021")
+        parseQuery.whereEqualTo("key", meetingID)
+        parseQuery.findInBackground { objects, e ->
+            run {
+                if (null != e) return@findInBackground
+                if (objects.isEmpty()) return@findInBackground
+                val parseObject = objects[0]
+                val parseQuery1 = ParseQuery<ParseObject>("candidates2021")
+                parseQuery1.whereEqualTo("call", parseObject)
+                parseQuery1.findInBackground { objects, e ->
+                    run {
+                        if (null != e) return@findInBackground
+                        if (objects.isEmpty()) return@findInBackground
+                        val iceCandidateArray: MutableList<IceCandidate> = mutableListOf()
+                        for (x in objects) {
+                            if (x.containsKey("type") && x.getString("type") == "offerCandidate") {
+                                iceCandidateArray.add(
+                                    IceCandidate(
+                                        x.getString("sdpMid").toString(),
+                                        Math.toIntExact(x.getLong("sdpMLineIndex")),
+                                        x.getString("sdp").toString()
+                                    )
+                                )
+                            } else if (x.containsKey("type") && x.getString("type") == "answerCandidate") {
+                                iceCandidateArray.add(
+                                    IceCandidate(
+                                        x.getString("sdpMid").toString(),
+                                        Math.toIntExact(x.getLong("sdpMLineIndex")),
+                                        x.getString("sdp").toString()
+                                    )
+                                )
+                            }
+
+                        }
                     }
                 }
-                peerConnection?.removeIceCandidates(iceCandidateArray.toTypedArray())
             }
+        }
         val endCall = hashMapOf(
             "type" to "END_CALL"
         )
-        db.collection("calls").document(meetingID)
-            .set(endCall)
-            .addOnSuccessListener {
-                Log.e(TAG, "DocumentSnapshot added")
-            }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Error adding document", e)
-            }
-
+        val parseObject = ParseObject("calls2021")
+        parseObject.put("key", meetingID)
+        endCall.forEach { (k, v) -> parseObject.put(k, v) }
+        parseObject.saveInBackground().onSuccessTask {
+            Log.v(TAG, "parse x, saveInBackground: " + Gson().toJson(parseObject))
+            return@onSuccessTask it
+        }
         peerConnection?.close()
     }
 
