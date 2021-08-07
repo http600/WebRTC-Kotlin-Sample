@@ -3,11 +3,11 @@ package com.developerspace.webrtcsample
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isGone
@@ -44,10 +44,6 @@ class RTCActivity : AppCompatActivity() {
     private var inSpeakerMode = true
 
     private val sdpObserver = object : AppSdpObserver() {
-        override fun onCreateSuccess(p0: SessionDescription?) {
-            super.onCreateSuccess(p0)
-//            signallingClient.send(p0)
-        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

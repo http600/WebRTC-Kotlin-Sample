@@ -4,17 +4,12 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
 import com.parse.Parse
 import com.parse.ParseObject
 import com.parse.ParseQuery
 import kotlinx.android.synthetic.main.activity_start.*
 
 class MainActivity : AppCompatActivity() {
-
-    val db = Firebase.firestore
-
     @SuppressLint("WrongConstant")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

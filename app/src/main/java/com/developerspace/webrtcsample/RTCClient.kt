@@ -5,8 +5,6 @@ import android.content.Context
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
 import com.parse.ParseObject
 import com.parse.ParseQuery
@@ -27,7 +25,6 @@ class RTCClient(
     private var localVideoTrack: VideoTrack? = null
     val TAG = "RTCClient"
     var remoteSessionDescription: SessionDescription? = null
-    val db = Firebase.firestore
 
     init {
         initPeerConnectionFactory(context)
