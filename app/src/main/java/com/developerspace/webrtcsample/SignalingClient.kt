@@ -1,8 +1,6 @@
 package com.developerspace.webrtcsample
 
 import android.util.Log
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
 import com.parse.ParseObject
 import com.parse.ParseQuery
@@ -23,8 +21,6 @@ class SignalingClient(
 
     val TAG = "SignallingClient"
 
-    val db = Firebase.firestore
-
     var SDPtype: String? = null
     override val coroutineContext = Dispatchers.IO + job
 
@@ -35,9 +31,7 @@ class SignalingClient(
     }
 
     private fun connect() = launch {
-        db.enableNetwork().addOnSuccessListener {
-            listener.onConnectionEstablished()
-        }
+        listener.onConnectionEstablished()
         val sendData = sendChannel.offer("")
         sendData.let {
             Log.v(this@SignalingClient.javaClass.simpleName, "Sending: $it")
