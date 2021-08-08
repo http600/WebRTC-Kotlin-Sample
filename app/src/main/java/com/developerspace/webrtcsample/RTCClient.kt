@@ -2,9 +2,7 @@ package com.developerspace.webrtcsample
 
 import android.app.Application
 import android.content.Context
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
 import com.google.gson.Gson
 import com.parse.ParseObject
 import com.parse.ParseQuery
@@ -15,15 +13,18 @@ class RTCClient(
     context: Application,
     observer: PeerConnection.Observer
 ) {
+
     companion object {
         private const val LOCAL_TRACK_ID = "local_track"
         private const val LOCAL_STREAM_ID = "local_track"
     }
 
     private val rootEglBase: EglBase = EglBase.create()
+
     private var localAudioTrack: AudioTrack? = null
     private var localVideoTrack: VideoTrack? = null
     val TAG = "RTCClient"
+
     var remoteSessionDescription: SessionDescription? = null
 
     init {
@@ -34,11 +35,14 @@ class RTCClient(
         PeerConnection.IceServer.builder("stun:stun.l.google.com:19302")
             .createIceServer()
     )
+
     private val peerConnectionFactory by lazy { buildPeerConnectionFactory() }
     private val videoCapturer by lazy { getVideoCapturer(context) }
+
     private val audioSource by lazy { peerConnectionFactory.createAudioSource(MediaConstraints()) }
     private val localVideoSource by lazy { peerConnectionFactory.createVideoSource(false) }
     private val peerConnection by lazy { buildPeerConnection(observer) }
+
     private fun initPeerConnectionFactory(context: Application) {
         val options = PeerConnectionFactory.InitializationOptions.builder(context)
             .setEnableInternalTracer(true)
@@ -241,7 +245,6 @@ class RTCClient(
         peerConnection?.addIceCandidate(iceCandidate)
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
     fun endCall(meetingID: String) {
         val parseQuery = ParseQuery<ParseObject>("calls2021")
         parseQuery.whereEqualTo("key", meetingID)
