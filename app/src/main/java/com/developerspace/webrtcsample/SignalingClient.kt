@@ -13,7 +13,7 @@ import org.webrtc.SessionDescription
 @ExperimentalCoroutinesApi
 @KtorExperimentalAPI
 class SignalingClient(
-    private val meetingID: String,
+    private val callKey: String,
     private val listener: SignalingClientListener
 ) : CoroutineScope {
 
@@ -38,7 +38,7 @@ class SignalingClient(
         }
         try {
             val parseQuery = ParseQuery<ParseObject>("calls2021")
-            parseQuery.whereEqualTo("key", meetingID)
+            parseQuery.whereEqualTo("key", callKey)
             parseQuery.findInBackground { objects, e ->
                 run {
                     if (null != e) {
@@ -76,7 +76,7 @@ class SignalingClient(
                 }
             }
             val parseQueryCall = ParseQuery<ParseObject>("calls2021")
-            parseQueryCall.whereEqualTo("key", meetingID)
+            parseQueryCall.whereEqualTo("key", callKey)
             parseQueryCall.findInBackground { objects, e ->
                 run {
                     if (null != e) return@findInBackground
@@ -144,7 +144,7 @@ class SignalingClient(
             )
         }
         val parseQueryCall = ParseQuery<ParseObject>("calls2021")
-        parseQueryCall.whereEqualTo("key", meetingID)
+        parseQueryCall.whereEqualTo("key", callKey)
         parseQueryCall.findInBackground { objects, e ->
             run {
                 if (null != e) return@findInBackground
