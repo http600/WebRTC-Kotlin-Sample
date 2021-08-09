@@ -109,7 +109,7 @@ class RTCClient(
         peerConnection?.addStream(localStream)
     }
 
-    private fun PeerConnection.call(sdpObserver: SdpObserver, meetingID: String) {
+    private fun PeerConnection.call(sdpObserver: SdpObserver, callKey: String) {
         val constraints = MediaConstraints().apply {
             mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"))
         }
@@ -127,8 +127,13 @@ class RTCClient(
                             "type" to desc?.type
                         )
                         val parseObject = ParseObject("calls2021")
-                        parseObject.put("key", meetingID)
-                        offer.forEach { (k, v) -> parseObject.put(k, v.toString()) }
+                        parseObject.put("key", callKey)
+                        offer.forEach { (k, v) ->
+                            parseObject.put(
+                                k,
+                                if (v is String || v is Number) v.toString() else Gson().toJson(v)
+                            )
+                        }
                         parseObject.saveInBackground().onSuccessTask {
                             Log.v(TAG, "parse x, saveInBackground: " + Gson().toJson(parseObject))
                             return@onSuccessTask it
@@ -157,7 +162,7 @@ class RTCClient(
         }, constraints)
     }
 
-    private fun PeerConnection.answer(sdpObserver: SdpObserver, meetingID: String) {
+    private fun PeerConnection.answer(sdpObserver: SdpObserver, callKey: String) {
         val constraints = MediaConstraints().apply {
             mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"))
         }
@@ -168,7 +173,7 @@ class RTCClient(
                     "type" to desc?.type
                 )
                 val parseQuery = ParseQuery<ParseObject>("calls2021")
-                parseQuery.whereEqualTo("key", meetingID)
+                parseQuery.whereEqualTo("key", callKey)
                 parseQuery.findInBackground { objects, e ->
                     run {
                         if (null != e) return@findInBackground
@@ -177,7 +182,7 @@ class RTCClient(
                         answer.forEach { (k, v) ->
                             parseObject.put(
                                 k,
-                                if (v is String) v else Gson().toJson(v)
+                                if (v is String) v.toString() else Gson().toJson(v)
                             )
                         }
                         parseObject.saveInBackground().onSuccessTask {
